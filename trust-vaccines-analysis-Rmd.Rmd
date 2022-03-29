@@ -44,4 +44,27 @@ d_trustvac <- read_csv(
   ))
 ```
 
+# Demographic characterisitics of the sample
+
+## gender
+```{r}
+d_trustvac %>%
+  count(gender_nb)
+
+d_trustvac %>%
+  ggplot(aes(x = gender_nb)) +
+  geom_bar()
+```
+## age
+```{r}
+d_trustvac %>%
+  summarise(
+    n = n(),
+    M = mean(age) %>% round(digits = 2),
+    SD = sd(age)%>% round(digits = 2))
+
+d_trustvac %>%
+  ggplot(aes(x = age))+
+  geom_histogram(binwidth =  5)
+```
 
