@@ -12,6 +12,7 @@ library(dplyr)
 library(readr)
 library(ggplot2)
 library(knitr)
+library(psych)
 
 options(scipen = 999)
 
@@ -25,7 +26,8 @@ ed_levels <- c(
   "NVQ5 or post-graduate diploma."
 )
 
-likert_levels <- c("Strongly disagree", 
+likert_levels <- c(
+  "Strongly disagree", 
   "Tend to disagree", 
   "Neither agree nor disagree", 
   "Tend to agree", 
@@ -45,6 +47,7 @@ d_trustvac <- read_csv(
     col_factor(ordered = TRUE, levels = likert_levels),
     col_factor(ordered = TRUE, levels = likert_levels),
     col_factor(ordered = TRUE, levels = likert_levels),
+    col_factor(ordered = TRUE, levels = likert_levels),
   ))
 
 d_trustvac <- d_trustvac %>%
@@ -55,9 +58,50 @@ d_trustvac <- d_trustvac %>%
       .names = '{.col}_coded'
     )
   )
+
+keys_list <- list(
+  gov_trust = c(
+    'govhonest_coded',
+    'govright_coded',
+    '-govunfair_coded',
+    '-govignore_coded',
+    '-govcautious_coded',
+    '-govxbel_coded'
+  ),
+  vac_attitude = c(
+    'vacch_coded',
+    'vacsafe_coded',
+    'vacwork_coded'
+  )
+)
+
+trustvac_scores <- scoreItems(
+  keys = keys_list,
+  items = d_trustvac,
+  totals = FALSE,
+  missing = TRUE,
+  impute = 'none'
+)
+
+d_trustvac <- cbind(d_trustvac, trustvac_scores$scores)
 ```
 
 # Demographic characterisitics of the sample
+
+## Age
+```{r}
+d_trustvac %>%
+  summarise(
+    n = n(),
+    M = mean(age) %>% round(digits = 2), 
+    Mdn = median(age),
+    SD = sd(age) %>% round(digits = 2))
+
+d_trustvac %>%
+  ggplot(aes(x = age)) +
+  geom_histogram(binwidth = 5)
+```
+
 
 ## gender
 ```{r}
@@ -68,19 +112,7 @@ d_trustvac %>%
   ggplot(aes(x = gender_nb)) +
   geom_bar()
 ```
-## age
-```{r}
-d_trustvac %>%
-  summarise(
-    n = n(),
-    M = mean(age) %>% round(digits = 2),
-    Mdn = median(age),
-    SD = sd(age)%>% round(digits = 2))
 
-d_trustvac %>%
-  ggplot(aes(x = age))+
-  geom_histogram(binwidth =  5)
-```
 ## Higher educational qualification
 ```{r}
 d_trustvac %>%
@@ -91,14 +123,15 @@ d_trustvac %>%
   geom_bar() +
   coord_flip()
 ```
+
 # Descripitive statistics : Likert items
 ```{r}
-
 trustvac_likert_summary <- d_trustvac %>%
   select(ends_with('_coded')) %>%
   lapply(
     median, na.rm = TRUE
   )
+
 d_trustvac_likert_summary <- tibble(
   Item = trustvac_likert_summary %>% names,
   Median = trustvac_likert_summary %>% unlist
@@ -112,7 +145,6 @@ d_trustvac_likert_summary %>%
   )+
   geom_point() +
   coord_flip()
-
 ```
 
 ```{r}
@@ -129,7 +161,6 @@ d_trustvac <- d_trustvac %>%
         'Strongly disagree' = FALSE
       )
   )
-summary(d_trustvac$Female)
 
 d_trustvac %>%
   xtabs(~ Female + Vaccines_safe, .)
@@ -142,7 +173,7 @@ d_trustvac %>%
   ) %>%
   mutate(
     Percentage = round(Agree / n * 100)
-    )
+  )
 
 chisq.test(
   d_trustvac$Female,
@@ -173,3 +204,20 @@ d_trustvac %>%
 ```
 
 
+```{r}
+d_trustvac %>%
+  ggplot(aes(x = vac_attitude, fill = Female)) +
+  geom_histogram(
+    binwidth = 0.5)
+```
+```{r}
+d_trustvac %>%
+  ggplot(aes(x = gov_trust, y = vac_attitude)) +
+  geom_jitter(size = 0.5)
+
+```
+```{r}
+d_trustvac %>%
+  ggplot(aes(x = age, y = vac_attitude)) +
+  geom_jitter(size = 0.5)
+```
